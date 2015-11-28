@@ -3,7 +3,7 @@
 
 Name:           python-%{modname}
 Version:        0.3.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        PyWavelets, wavelet transform module
 License:        MIT
 URL:            http://pywavelets.readthedocs.org/
@@ -21,6 +21,12 @@ PyWavelets is a Python wavelet transforms module that can do:
 * Over seventy built-in wavelet filters and support for custom wavelets
 * Single and double precision calculations
 * Results compatibility with Matlab Wavelet Toolbox
+
+%package doc
+Summary:        Documentation for %{name}
+
+%description doc
+Documentation for %{name}
 
 %package -n python2-%{modname}
 Summary:        %{summary}
@@ -69,17 +75,19 @@ Python 3 version.
 %prep
 %autosetup -n %{modname}-%{version}
 
+for lib in %{modname}/tests/*.py; do
+ sed '1{\@^#!/usr/bin/env python@d}' $lib > $lib.new &&
+ touch -r $lib $lib.new &&
+ mv $lib.new $lib
+done
+
 %build
 %py2_build
 %py3_build
 
 pushd doc
-  export PYTHONPATH=`readlink -f ../build/lib.*-%{python2_version}`
-  make html BUILDDIR=_build-2 SPHINXBUILD=sphinx-build
-
   export PYTHONPATH=`readlink -f ../build/lib.*-%{python3_version}`
-  make html BUILDDIR=_build-3 SPHINXBUILD=sphinx-build-%{python3_version}
-
+  make html SPHINXBUILD=sphinx-build-%{python3_version}
   find -name '.buildinfo' -delete
 popd
 
@@ -91,18 +99,25 @@ popd
 %{__python2} runtests.py --pythonpath %{buildroot}%{python2_sitearch} --verbose --no-build
 %{__python3} runtests.py --pythonpath %{buildroot}%{python3_sitearch} --verbose --no-build
 
+%files doc
+%doc doc/build/html
+
 %files -n python2-%{modname}
 %license COPYING.txt
-%doc README.rst THANKS.txt doc/_build-2/html
+%doc README.rst THANKS.txt
 %{python2_sitearch}/%{modname}/
 %{python2_sitearch}/%{pkgname}*.egg-info
 
 %files -n python3-%{modname}
-%license COPYING.txt doc/_build-3/html
+%license COPYING.txt
 %doc README.rst THANKS.txt
 %{python3_sitearch}/%{modname}/
 %{python3_sitearch}/%{pkgname}*.egg-info
 
 %changelog
+* Sat Nov 28 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.3.0-2
+- One doc subpkg
+- Drop shebangs from tests
+
 * Fri Nov 06 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.3.0-1
 - Initial package
